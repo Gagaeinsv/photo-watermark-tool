@@ -4,7 +4,7 @@ import io
 import zipfile
 import requests
 
-# --- 1. CONFIG & LAYOUT ---
+# --- 1. CONFIG ---
 st.set_page_config(
     page_title="SV Watermark Pro", 
     layout="wide", 
@@ -17,7 +17,7 @@ def verify_license(key):
     if not key: return False
     if key == "SV-MASTER-2026": return True
     try:
-        product_id = "xUKZUCNx_S4bzXzB__ml_w==" #
+        product_id = "xUKZUCNx_S4bzXzB__ml_w==" # Твій ID
         response = requests.post(
             "https://api.gumroad.com/v2/licenses/verify",
             data={"product_id": product_id, "license_key": key}
@@ -27,24 +27,29 @@ def verify_license(key):
     except:
         return False
 
-# --- 3. CSS (CENTERING & SPACING) ---
+# --- 3. CSS (CLEAN PROFESSIONAL LOOK) ---
 st.markdown("""
     <style>
-    /* Прибираємо зайві відступи зверху */
-    .block-container { padding-top: 1.5rem !important; }
+    /* ПРИБИРАЄМО СТАНДАРТНИЙ HEADER ТА КНОПКУ SHARE */
+    header {visibility: hidden; height: 0px !important;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* ПРИБИРАЄМО ПАДІНГИ ЗВЕРХУ */
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
     
     .stApp, [data-testid="stHeader"], [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
     p, label, span, .stMarkdown, .stSlider label, .stSelectbox label { color: #00FF88 !important; font-weight: 600 !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00FF88 !important; box-shadow: 5px 0px 20px rgba(0, 255, 136, 0.2) !important; }
     
-    /* ЦЕНТРУВАННЯ ЗАГОЛОВКА */
+    /* ЦЕНТРУВАННЯ БРЕНДУ */
     .brand-container { 
         display: flex; 
         align-items: center; 
         justify-content: center; 
         width: 100%;
         margin-top: 0px; 
-        padding-bottom: 30px; 
+        padding-bottom: 25px; 
     }
     .sv-logo-box { 
         background-color: #00FF88; 
@@ -57,11 +62,10 @@ st.markdown("""
     
     div[data-testid="column"] > div > div > div.stVerticalBlock { background-color: #161B22 !important; border: 1px solid #00FF88 !important; border-radius: 12px; padding: 25px; }
     .stButton > button { background-color: #00FF88 !important; color: #000000 !important; font-weight: 800 !important; height: 60px; border-radius: 10px; }
-    footer { visibility: hidden; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. PROFESSIONAL TRANSLATIONS (Linguistic Audit) ---
+# --- 4. TRANSLATIONS (LINGUISTIC AUDIT) ---
 if 'lang' not in st.session_state: st.session_state.lang = 'IT'
 
 def sync_lang():
@@ -98,10 +102,8 @@ translations = {
 }
 t = translations[st.session_state.lang]
 
-# --- 5. HEADER (CENTERED LAYOUT) ---
-# Використовуємо 3 колонки для ідеального центрування
+# --- 5. HEADER (CENTERED) ---
 col_empty, col_main, col_lang = st.columns([1, 8, 1])
-
 with col_main:
     st.markdown(f'''
         <div class="brand-container">
@@ -109,7 +111,6 @@ with col_main:
             <h1 style="color:white; margin:0; font-size: 42px;">{t["title"]}</h1>
         </div>
     ''', unsafe_allow_html=True)
-
 with col_lang:
     st.selectbox("", ["IT", "EN", "DE"], 
                  index=["IT", "EN", "DE"].index(st.session_state.lang), 
@@ -119,27 +120,25 @@ with col_lang:
 with st.sidebar:
     st.markdown("### 🔐 SV Area PRO")
     gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl"
-    
     user_key = st.text_input("License Key / Magic Word", type="password")
     
-    if user_key.lower() == "bavovna": #
+    if user_key.lower() == "bavovna":
+        # Використовуємо твій робочий код H49A3MP
         gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP"
         st.info(t["egg"])
     
     st.link_button(t["buy_btn"], gumroad_url, use_container_width=True)
     st.write("---")
-    
     is_pro = verify_license(user_key)
     if is_pro: st.success("✅ PRO ATTIVO")
     else: st.warning(t["free_warn"])
-    
     st.caption(t["hint"])
 
 # --- 7. MAIN INTERFACE ---
 col1, col2 = st.columns(2, gap="large")
 with col1:
     with st.container():
-        st.markdown(f"### {t['up_header']}") # Фікс "Carica File"
+        st.markdown(f"### {t['up_header']}")
         ups  = st.file_uploader(t["up_photos"], accept_multiple_files=True, type=['jpg','png','jpeg'])
         lgo = st.file_uploader(t["up_logo"], type=['png'])
 with col2:
@@ -156,8 +155,6 @@ def apply(img_f, logo_f, s, a, p):
     wm = wm.resize((w_w, w_h), Image.Resampling.LANCZOS)
     r,g,b,alpha = wm.split(); wm.putalpha(alpha.point(lambda x: x * (a / 255)))
     ly = Image.new('RGBA', im.size, (0,0,0,0))
-    
-    # Виправлена логіка позицій для всіх мов
     if p in ["Centro", "Center", "Mitte"]: 
         ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
     elif p in ["In basso a destra", "Bottom Right", "Unten rechts"]: 
