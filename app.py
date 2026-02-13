@@ -5,7 +5,7 @@ import zipfile
 import requests
 import extra_streamlit_components as stx
 
-# --- 1. CONFIG & UI CLEANUP ---
+# --- 1. CONFIG ---
 st.set_page_config(
     page_title="SV Watermark Pro", 
     layout="wide", 
@@ -14,7 +14,6 @@ st.set_page_config(
 )
 
 # --- 2. COOKIE MANAGER (FIXED CachedWidgetWarning) ---
-# Ініціалізуємо менеджер куків напряму в коді, щоб уникнути помилки зі скріншота 7d03e9f3
 cookie_manager = stx.CookieManager()
 
 # --- 3. LICENSE VERIFICATION ---
@@ -22,7 +21,8 @@ def verify_license(key):
     if not key: return False
     if key == "SV-MASTER-2026": return True
     try:
-        product_id = "xUKZUCNx_S4bzXzB__ml_w==" #
+        # Твій Product ID зі скріншота
+        product_id = "xUKZUCNx_S4bzXzB__ml_w=="
         response = requests.post(
             "https://api.gumroad.com/v2/licenses/verify",
             data={"product_id": product_id, "license_key": key}
@@ -32,29 +32,27 @@ def verify_license(key):
     except:
         return False
 
-# --- 4. CSS (HIDDEN MANAGE APP & CLEAN UI) ---
+# --- 4. CSS (CLEAN UI & CENTERING) ---
 st.markdown("""
     <style>
-    /* ПОВНЕ ПРИХОВУВАННЯ ЕЛЕМЕНТІВ STREAMLIT */
+    /* ПРИХОВУЄМО ВСІ СЛУЖБОВІ ЕЛЕМЕНТИ (Share, Manage app, Toolbar) */
     header {visibility: hidden; height: 0px !important;}
     [data-testid="stHeader"] {display: none;}
     #MainMenu {visibility: hidden;}
     .stAppDeployButton {display:none;}
     footer {visibility: hidden;}
-    
-    /* ПРИХОВУЄМО КНОПКУ "MANAGE APP" ТА СТАТУСНИЙ ВІДЖЕТ */
-    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
     [data-testid="stAppToolbar"] {display: none !important;}
-    .st-emotion-cache-zt53z0 {display: none !important;} /* Клас для плаваючої кнопки */
+    [data-testid="stStatusWidget"] {display: none !important;}
+    /* Агресивне приховування плаваючих кнопок керування Streamlit Cloud */
+    .st-emotion-cache-zt53z0, .st-emotion-cache-1090z2 {display: none !important;}
     
-    /* ПРИБИРАЄМО ВІДСТУП ЗВЕРХУ */
+    /* ВІДСТУПИ ТА ФОН */
     .block-container { padding-top: 1rem !important; }
-    
-    .stApp, [data-testid="stHeader"], [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
+    .stApp, [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
     p, label, span, .stMarkdown, .stSlider label, .stSelectbox label { color: #00FF88 !important; font-weight: 600 !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00FF88 !important; box-shadow: 5px 0px 20px rgba(0, 255, 136, 0.2) !important; }
     
-    /* ЦЕНТРУВАННЯ ЗАГОЛОВКА */
+    /* ІДЕАЛЬНЕ ЦЕНТРУВАННЯ БРЕНДУ */
     .brand-container { 
         display: flex; align-items: center; justify-content: center; 
         width: 100%; margin-top: 0px; padding-bottom: 25px; 
@@ -70,7 +68,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. TRANSLATIONS (EN PRIMARY) ---
+# --- 5. TRANSLATIONS (EN IS PRIMARY) ---
 if 'lang' not in st.session_state: st.session_state.lang = 'EN'
 def sync_lang(): st.session_state.lang = st.session_state.lang_picker
 
@@ -110,29 +108,38 @@ col_empty, col_main, col_lang = st.columns([1, 8, 1])
 with col_main:
     st.markdown(f'''<div class="brand-container"><div class="sv-logo-box">SV</div><h1 style="color:white; margin:0; font-size: 42px;">{t["title"]}</h1></div>''', unsafe_allow_html=True)
 with col_lang:
-    st.selectbox("", ["EN", "IT", "DE"], index=["EN", "IT", "DE"].index(st.session_state.lang), key="lang_picker", on_change=sync_lang, label_visibility="collapsed")
+    st.selectbox("Language", ["EN", "IT", "DE"], 
+                 index=["EN", "IT", "DE"].index(st.session_state.lang), 
+                 key="lang_picker", on_change=sync_lang, label_visibility="collapsed")
 
 # --- 7. SIDEBAR (COOKIE & LICENSE) ---
 with st.sidebar:
     st.markdown("### 🔐 SV Area PRO")
+    # Отримуємо ключ з куків
     saved_key = cookie_manager.get(cookie="sv_license_key")
     user_key = st.text_input("License Key / Magic Word", value=saved_key if saved_key else "", type="password")
     
     gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl"
-    if user_key.lower() == "bavovna": # Твій код H49A3MP
+    if user_key.lower() == "bavovna":
+        # Код H49A3MP зі скріншота
         gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP"
         st.info(t["egg"])
     
     st.link_button(t["buy_btn"], gumroad_url, use_container_width=True)
     st.write("---")
+    
     is_pro = verify_license(user_key)
     if is_pro:
         st.success("✅ PRO ACTIVE" if st.session_state.lang == "EN" else "✅ PRO ATTIVO")
-        if user_key != saved_key: cookie_manager.set("sv_license_key", user_key, expires_at=None) 
-    else: st.warning(t["free_warn"])
+        # Зберігаємо ключ на 30 днів
+        if user_key != saved_key:
+            cookie_manager.set("sv_license_key", user_key, expires_at=None) 
+    else:
+        st.warning(t["free_warn"])
+    
     st.caption(t["hint"])
 
-# --- 8. MAIN UI & LOGIC ---
+# --- 8. MAIN UI ---
 col1, col2 = st.columns(2, gap="large")
 with col1:
     with st.container():
@@ -143,17 +150,22 @@ with col2:
     with st.container():
         st.markdown(f"### {t['setup_header']}")
         p_sel = st.selectbox(t["pos_label"], t["pos_options"])
-        sz = st.slider(t["logo_size"], 5, 100, 20); op = st.slider(t["alpha"], 0, 255, 128)
+        sz = st.slider(t["logo_size"], 5, 100, 20)
+        op = st.slider(t["alpha"], 0, 255, 128)
 
+# --- 9. IMAGE PROCESSING LOGIC ---
 def apply(img_f, logo_f, s, a, p):
     im = Image.open(img_f).convert("RGBA"); wm = Image.open(logo_f).convert("RGBA")
     w_w = int((im.width * s) / 100); w_h = int(wm.height * (w_w / wm.width))
     wm = wm.resize((w_w, w_h), Image.Resampling.LANCZOS)
     r,g,b,alpha = wm.split(); wm.putalpha(alpha.point(lambda x: x * (a / 255)))
     ly = Image.new('RGBA', im.size, (0,0,0,0))
-    if any(x in p for x in ["Center", "Centro", "Mitte"]): ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
-    elif any(x in p for x in ["Right", "destra", "rechts"]): ly.paste(wm, (im.width - wm.width - 20, im.height - wm.height - 20))
-    elif any(x in p for x in ["Left", "sinistra", "links"]): ly.paste(wm, (20, im.height - wm.height - 20))
+    if any(x in p for x in ["Center", "Centro", "Mitte"]): 
+        ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
+    elif any(x in p for x in ["Right", "destra", "rechts"]): 
+        ly.paste(wm, (im.width - wm.width - 20, im.height - wm.height - 20))
+    elif any(x in p for x in ["Left", "sinistra", "links"]): 
+        ly.paste(wm, (20, im.height - wm.height - 20))
     elif any(x in p for x in ["Mosaic", "Mosaico", "Mosaik"]):
         for x in range(0, im.width, wm.width + 50):
             for y in range(0, im.height, wm.height + 50): ly.paste(wm, (x, y))
@@ -163,12 +175,13 @@ if ups  and lgo:
     st.markdown("<br>", unsafe_allow_html=True); st.markdown(f"### {t['preview']}")
     st.image(apply(ups[0], lgo, sz, op, p_sel), use_container_width=True)
 
+# --- 10. EXECUTION ---
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 max_f = 1000 if is_pro else 5
 rem = max_f - st.session_state.usage_count
 
 if not is_pro and rem <= 0:
-    st.error("⛔ Limit reached!" if st.session_state.lang == "EN" else "⛔ Limite raggiunto!")
+    st.error("⛔ Limit reached!" if st.session_state.lang == "EN" else "⛔ Limit raggiunto!")
 else:
     if not is_pro: st.write(f"{t['remaining']} **{rem}**")
     if st.button(t["process_btn"], type="primary", use_container_width=True):
@@ -177,6 +190,8 @@ else:
             zb = io.BytesIO()
             with zipfile.ZipFile(zb, "a", zipfile.ZIP_DEFLATED) as z:
                 for f in td:
-                    res = apply(f, lgo, sz, op, p_sel); b = io.BytesIO(); res.save(b, format='JPEG', quality=90); z.writestr(f"SV_{f.name}", b.getvalue())
+                    res = apply(f, lgo, sz, op, p_sel)
+                    b = io.BytesIO(); res.save(b, format='JPEG', quality=90)
+                    z.writestr(f"SV_{f.name}", b.getvalue())
             if not is_pro: st.session_state.usage_count += len(td)
             st.success(t["done"]); st.download_button("📥 DOWNLOAD", zb.getvalue(), "SV_Photos.zip", use_container_width=True); st.rerun()
