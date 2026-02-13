@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. COOKIE MANAGER (FIXED CachedWidgetWarning) ---
+# --- 2. COOKIE MANAGER ---
 cookie_manager = stx.CookieManager()
 
 # --- 3. LICENSE VERIFICATION ---
@@ -21,8 +21,7 @@ def verify_license(key):
     if not key: return False
     if key == "SV-MASTER-2026": return True
     try:
-        # Твій Product ID зі скріншота
-        product_id = "xUKZUCNx_S4bzXzB__ml_w=="
+        product_id = "xUKZUCNx_S4bzXzB__ml_w==" #
         response = requests.post(
             "https://api.gumroad.com/v2/licenses/verify",
             data={"product_id": product_id, "license_key": key}
@@ -32,31 +31,35 @@ def verify_license(key):
     except:
         return False
 
-# --- 4. CSS (CLEAN UI & CENTERING) ---
+# --- 4. CSS (CLEAN UI + MOBILE SIDEBAR FIX) ---
 st.markdown("""
     <style>
-    /* ПРИХОВУЄМО ВСІ СЛУЖБОВІ ЕЛЕМЕНТИ (Share, Manage app, Toolbar) */
-    header {visibility: hidden; height: 0px !important;}
-    [data-testid="stHeader"] {display: none;}
-    #MainMenu {visibility: hidden;}
-    .stAppDeployButton {display:none;}
-    footer {visibility: hidden;}
-    [data-testid="stAppToolbar"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    /* Агресивне приховування плаваючих кнопок керування Streamlit Cloud */
-    .st-emotion-cache-zt53z0, .st-emotion-cache-1090z2 {display: none !important;}
+    /* 1. ПРИХОВУЄМО ТІЛЬКИ ЗАЙВЕ, ЗАЛИШАЄМО КНОПКУ МЕНЮ */
+    header { background: transparent !important; }
+    [data-testid="stAppDeployButton"] { display: none !important; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
     
-    /* ВІДСТУПИ ТА ФОН */
-    .block-container { padding-top: 1rem !important; }
+    /* Приховуємо кнопку "Manage app" та статус-віджети */
+    [data-testid="stStatusWidget"] { display: none !important; }
+    .st-emotion-cache-zt53z0, .st-emotion-cache-1090z2 { display: none !important; }
+
+    /* 2. ПРИМУСОВО ПОКАЗУЄМО КНОПКУ ВІДКРИТТЯ МЕНЮ (СТРІЛОЧКУ) */
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        display: block !important;
+        color: #00FF88 !important; /* Робимо її фірмового зеленого кольору */
+        background-color: rgba(0, 255, 136, 0.1) !important;
+        border-radius: 8px !important;
+    }
+
+    /* 3. ВІДСТУПИ ТА ЦЕНТРУВАННЯ */
+    .block-container { padding-top: 1.5rem !important; }
     .stApp, [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
     p, label, span, .stMarkdown, .stSlider label, .stSelectbox label { color: #00FF88 !important; font-weight: 600 !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00FF88 !important; box-shadow: 5px 0px 20px rgba(0, 255, 136, 0.2) !important; }
     
-    /* ІДЕАЛЬНЕ ЦЕНТРУВАННЯ БРЕНДУ */
-    .brand-container { 
-        display: flex; align-items: center; justify-content: center; 
-        width: 100%; margin-top: 0px; padding-bottom: 25px; 
-    }
+    .brand-container { display: flex; align-items: center; justify-content: center; width: 100%; padding-bottom: 25px; }
     .sv-logo-box { 
         background-color: #00FF88; color: #000000 !important; font-weight: 900; 
         width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; 
@@ -68,7 +71,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. TRANSLATIONS (EN IS PRIMARY) ---
+# --- 5. TRANSLATIONS (EN PRIMARY) ---
 if 'lang' not in st.session_state: st.session_state.lang = 'EN'
 def sync_lang(): st.session_state.lang = st.session_state.lang_picker
 
@@ -98,7 +101,7 @@ translations = {
         "up_header": "📂 1. Dateien hochladen", "up_photos": "Fotos auswählen", "up_logo": "Logo hochladen (PNG)",
         "setup_header": "⚙️ 2. Logo-Einstellungen", "preview": "👁️ SV Vorschau", "buy_btn": "💎 PRO-LIZENZ KAUFEN",
         "hint": "💡 Sonderangebot: Kennst du das ukrainische Zauberwort für 'explosive Blumen'? Gib es oben ein.",
-        "egg": "💙💛 Ruhm der Ukraine! 50% Rabatt aktiviert.", "done": "✅ Fertig!"
+        "egg": "💙💛 Ruhм der Ukraine! 50% Rabatt aktiviert.", "done": "✅ Fertig!"
     }
 }
 t = translations[st.session_state.lang]
@@ -115,31 +118,24 @@ with col_lang:
 # --- 7. SIDEBAR (COOKIE & LICENSE) ---
 with st.sidebar:
     st.markdown("### 🔐 SV Area PRO")
-    # Отримуємо ключ з куків
     saved_key = cookie_manager.get(cookie="sv_license_key")
     user_key = st.text_input("License Key / Magic Word", value=saved_key if saved_key else "", type="password")
     
     gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl"
-    if user_key.lower() == "bavovna":
-        # Код H49A3MP зі скріншота
+    if user_key.lower() == "bavovna": #
         gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP"
         st.info(t["egg"])
     
     st.link_button(t["buy_btn"], gumroad_url, use_container_width=True)
     st.write("---")
-    
     is_pro = verify_license(user_key)
     if is_pro:
         st.success("✅ PRO ACTIVE" if st.session_state.lang == "EN" else "✅ PRO ATTIVO")
-        # Зберігаємо ключ на 30 днів
-        if user_key != saved_key:
-            cookie_manager.set("sv_license_key", user_key, expires_at=None) 
-    else:
-        st.warning(t["free_warn"])
-    
+        if user_key != saved_key: cookie_manager.set("sv_license_key", user_key, expires_at=None) 
+    else: st.warning(t["free_warn"])
     st.caption(t["hint"])
 
-# --- 8. MAIN UI ---
+# --- 8. MAIN UI & LOGIC ---
 col1, col2 = st.columns(2, gap="large")
 with col1:
     with st.container():
@@ -150,22 +146,17 @@ with col2:
     with st.container():
         st.markdown(f"### {t['setup_header']}")
         p_sel = st.selectbox(t["pos_label"], t["pos_options"])
-        sz = st.slider(t["logo_size"], 5, 100, 20)
-        op = st.slider(t["alpha"], 0, 255, 128)
+        sz = st.slider(t["logo_size"], 5, 100, 20); op = st.slider(t["alpha"], 0, 255, 128)
 
-# --- 9. IMAGE PROCESSING LOGIC ---
 def apply(img_f, logo_f, s, a, p):
     im = Image.open(img_f).convert("RGBA"); wm = Image.open(logo_f).convert("RGBA")
     w_w = int((im.width * s) / 100); w_h = int(wm.height * (w_w / wm.width))
     wm = wm.resize((w_w, w_h), Image.Resampling.LANCZOS)
     r,g,b,alpha = wm.split(); wm.putalpha(alpha.point(lambda x: x * (a / 255)))
     ly = Image.new('RGBA', im.size, (0,0,0,0))
-    if any(x in p for x in ["Center", "Centro", "Mitte"]): 
-        ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
-    elif any(x in p for x in ["Right", "destra", "rechts"]): 
-        ly.paste(wm, (im.width - wm.width - 20, im.height - wm.height - 20))
-    elif any(x in p for x in ["Left", "sinistra", "links"]): 
-        ly.paste(wm, (20, im.height - wm.height - 20))
+    if any(x in p for x in ["Center", "Centro", "Mitte"]): ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
+    elif any(x in p for x in ["Right", "destra", "rechts"]): ly.paste(wm, (im.width - wm.width - 20, im.height - wm.height - 20))
+    elif any(x in p for x in ["Left", "sinistra", "links"]): ly.paste(wm, (20, im.height - wm.height - 20))
     elif any(x in p for x in ["Mosaic", "Mosaico", "Mosaik"]):
         for x in range(0, im.width, wm.width + 50):
             for y in range(0, im.height, wm.height + 50): ly.paste(wm, (x, y))
@@ -175,13 +166,12 @@ if ups  and lgo:
     st.markdown("<br>", unsafe_allow_html=True); st.markdown(f"### {t['preview']}")
     st.image(apply(ups[0], lgo, sz, op, p_sel), use_container_width=True)
 
-# --- 10. EXECUTION ---
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 max_f = 1000 if is_pro else 5
 rem = max_f - st.session_state.usage_count
 
 if not is_pro and rem <= 0:
-    st.error("⛔ Limit reached!" if st.session_state.lang == "EN" else "⛔ Limit raggiunto!")
+    st.error("⛔ Limit reached!" if st.session_state.lang == "EN" else "⛔ Limite raggiunto!")
 else:
     if not is_pro: st.write(f"{t['remaining']} **{rem}**")
     if st.button(t["process_btn"], type="primary", use_container_width=True):
@@ -190,8 +180,6 @@ else:
             zb = io.BytesIO()
             with zipfile.ZipFile(zb, "a", zipfile.ZIP_DEFLATED) as z:
                 for f in td:
-                    res = apply(f, lgo, sz, op, p_sel)
-                    b = io.BytesIO(); res.save(b, format='JPEG', quality=90)
-                    z.writestr(f"SV_{f.name}", b.getvalue())
+                    res = apply(f, lgo, sz, op, p_sel); b = io.BytesIO(); res.save(b, format='JPEG', quality=90); z.writestr(f"SV_{f.name}", b.getvalue())
             if not is_pro: st.session_state.usage_count += len(td)
             st.success(t["done"]); st.download_button("📥 DOWNLOAD", zb.getvalue(), "SV_Photos.zip", use_container_width=True); st.rerun()
