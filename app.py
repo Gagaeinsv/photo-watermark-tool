@@ -3,8 +3,9 @@ from PIL import Image
 import io
 import zipfile
 import requests
+import extra_streamlit_components as stx
 
-# --- 1. CONFIG ---
+# --- 1. CONFIG & CLEAN UI ---
 st.set_page_config(
     page_title="SV Watermark Pro", 
     layout="wide", 
@@ -12,7 +13,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. LICENSE VERIFICATION ---
+# --- 2. COOKIE MANAGER (FIXED: REMOVED CACHE) ---
+# Прибрали @st.cache_resource, щоб уникнути CachedWidgetWarning
+cookie_manager = stx.CookieManager()
+
+# --- 3. LICENSE VERIFICATION ---
 def verify_license(key):
     if not key: return False
     if key == "SV-MASTER-2026": return True
@@ -27,49 +32,26 @@ def verify_license(key):
     except:
         return False
 
-# --- 3. CSS (CLEAN UI & CENTERING) ---
+# --- 4. CSS (CLEAN & CENTERED) ---
 st.markdown("""
     <style>
-    /* ПРИБИРАЄМО СТАНДАРТНИЙ HEADER ТА КНОПКУ SHARE */
     header {visibility: hidden; height: 0px !important;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
-    /* ПРИБИРАЄМО ПАДІНГИ ЗВЕРХУ */
     .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
-    
     .stApp, [data-testid="stHeader"], [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
     p, label, span, .stMarkdown, .stSlider label, .stSelectbox label { color: #00FF88 !important; font-weight: 600 !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00FF88 !important; box-shadow: 5px 0px 20px rgba(0, 255, 136, 0.2) !important; }
-    
-    /* ЦЕНТРУВАННЯ БРЕНДУ */
-    .brand-container { 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        width: 100%;
-        margin-top: 0px; 
-        padding-bottom: 25px; 
-    }
-    .sv-logo-box { 
-        background-color: #00FF88; 
-        color: #000000 !important; 
-        font-weight: 900; 
-        width: 55px; height: 55px; 
-        display: flex; align-items: center; justify-content: center; 
-        border-radius: 12px; font-size: 30px; margin-right: 18px; 
-    }
-    
+    .brand-container { display: flex; align-items: center; justify-content: center; width: 100%; padding-bottom: 25px; }
+    .sv-logo-box { background-color: #00FF88; color: #000000 !important; font-weight: 900; width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 30px; margin-right: 18px; }
     div[data-testid="column"] > div > div > div.stVerticalBlock { background-color: #161B22 !important; border: 1px solid #00FF88 !important; border-radius: 12px; padding: 25px; }
     .stButton > button { background-color: #00FF88 !important; color: #000000 !important; font-weight: 800 !important; height: 60px; border-radius: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. TRANSLATIONS (EN PRIMARY + FIXED IT/DE) ---
+# --- 5. TRANSLATIONS ---
 if 'lang' not in st.session_state: st.session_state.lang = 'EN'
-
-def sync_lang():
-    st.session_state.lang = st.session_state.lang_picker
+def sync_lang(): st.session_state.lang = st.session_state.lang_picker
 
 translations = {
     "EN": {
@@ -86,93 +68,91 @@ translations = {
         "remaining": "Rimaste: ", "logo_size": "Grandezza Logo %", "alpha": "Trasparenza (Alpha)",
         "pos_label": "Posizione", "pos_options": ["Centro", "In basso a destra", "In basso a sinistra", "Mosaico"],
         "up_header": "📂 1. Carica File", "up_photos": "Seleziona Foto", "up_logo": "Carica Logo (PNG)",
-        "setup_header": "⚙️ 2. Configurazione Logo", # ВИПРАВЛЕНО НА ІТАЛІЙСЬКУ
-        "preview": "👁️ Anteprima SV", "buy_btn": "💎 ACQUISTA LICENZA PRO",
+        "setup_header": "⚙️ 2. Configurazione Logo", "preview": "👁️ Anteprima SV", "buy_btn": "💎 ACQUISTA LICENZA PRO",
         "hint": "💡 Offerta speciale: conosci la parola magica ucraina legata ai 'fiori esplosivi'? Inseriscila sopra.",
         "egg": "💙💛 Слава Україні! Знижка 'Бавовна' 50% активована.", "done": "✅ Fatto!"
     },
     "DE": {
-        "title": "Watermark Pro", "free_warn": "⚠️ Kostenlose Version: 5 Fotos.", "process_btn": "🚀 ALLE VERARBEITEN", 
+        "title": "Watermark Pro", "free_warn": "⚠️ Gratis-Version: 5 Fotos.", "process_btn": "🚀 ALLE VERARBEITEN", 
         "remaining": "Verbleibend: ", "logo_size": "Logo-Größe %", "alpha": "Transparenz (Alpha)",
         "pos_label": "Position", "pos_options": ["Mitte", "Unten rechts", "Unten links", "Mosaik"],
         "up_header": "📂 1. Dateien hochladen", "up_photos": "Fotos auswählen", "up_logo": "Logo hochladen (PNG)",
-        "setup_header": "⚙️ 2. Logo-Einstellungen", 
-        "preview": "👁️ SV Vorschau", "buy_btn": "💎 PRO-LIZENZ KAUFEN",
+        "setup_header": "⚙️ 2. Logo-Einstellungen", "preview": "👁️ SV Vorschau", "buy_btn": "💎 PRO-LIZENZ KAUFEN",
         "hint": "💡 Sonderangebot: Kennst du das ukrainische Zauberwort für 'explosive Blumen'? Gib es oben ein.",
         "egg": "💙💛 Ruhm der Ukraine! 50% Rabatt aktiviert.", "done": "✅ Fertig!"
     }
 }
 t = translations[st.session_state.lang]
 
-# --- 5. HEADER (CENTERED) ---
+# --- 6. HEADER ---
 col_empty, col_main, col_lang = st.columns([1, 8, 1])
 with col_main:
-    st.markdown(f'''
-        <div class="brand-container">
-            <div class="sv-logo-box">SV</div>
-            <h1 style="color:white; margin:0; font-size: 42px;">{t["title"]}</h1>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'<div class="brand-container"><div class="sv-logo-box">SV</div><h1 style="color:white; margin:0; font-size: 42px;">{t["title"]}</h1></div>', unsafe_allow_html=True)
 with col_lang:
-    st.selectbox("", ["EN", "IT", "DE"], 
-                 index=["EN", "IT", "DE"].index(st.session_state.lang), 
-                 key="lang_picker", on_change=sync_lang, label_visibility="collapsed")
+    st.selectbox("", ["EN", "IT", "DE"], index=["EN", "IT", "DE"].index(st.session_state.lang), key="lang_picker", on_change=sync_lang, label_visibility="collapsed")
 
-# --- 6. SIDEBAR ---
+# --- 7. SIDEBAR (COOKIE LOGIC) ---
 with st.sidebar:
     st.markdown("### 🔐 SV Area PRO")
-    gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl"
-    user_key = st.text_input("License Key / Magic Word", type="password")
     
-    if user_key.lower() == "bavovna": #
-        gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP"
+    # Отримуємо ключ безпосередньо через менеджер
+    saved_key = cookie_manager.get(cookie="sv_license_key")
+    
+    user_key = st.text_input("License Key / Magic Word", value=saved_key if saved_key else "", type="password")
+    
+    gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl"
+    if user_key.lower() == "bavovna":
+        gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP" #
         st.info(t["egg"])
     
     st.link_button(t["buy_btn"], gumroad_url, use_container_width=True)
     st.write("---")
+    
     is_pro = verify_license(user_key)
-    if is_pro: st.success("✅ PRO ACTIVE" if st.session_state.lang == "EN" else "✅ PRO ATTIVO")
-    else: st.warning(t["free_warn"])
+    if is_pro:
+        st.success("✅ PRO ACTIVE" if st.session_state.lang == "EN" else "✅ PRO ATTIVO")
+        # Перезаписуємо куку лише якщо ключ змінився
+        if user_key != saved_key:
+            cookie_manager.set("sv_license_key", user_key, key="set_cookie")
+    else:
+        st.warning(t["free_warn"])
+    
     st.caption(t["hint"])
 
-# --- 7. MAIN INTERFACE ---
+# --- 8. MAIN INTERFACE ---
 col1, col2 = st.columns(2, gap="large")
 with col1:
     with st.container():
         st.markdown(f"### {t['up_header']}")
-        ups  = st.file_uploader(t["up_photos"], accept_multiple_files=True, type=['jpg','png','jpeg'])
+        ups = st.file_uploader(t["up_photos"], accept_multiple_files=True, type=['jpg','png','jpeg'])
         lgo = st.file_uploader(t["up_logo"], type=['png'])
 with col2:
     with st.container():
-        st.markdown(f"### {t['setup_header']}") # ТЕПЕР ПЕРЕКЛАДАЄТЬСЯ НА ВСІ МОВИ
+        st.markdown(f"### {t['setup_header']}")
         p_sel = st.selectbox(t["pos_label"], t["pos_options"])
         sz = st.slider(t["logo_size"], 5, 100, 20)
         op = st.slider(t["alpha"], 0, 255, 128)
 
-# --- 8. LOGIC ---
+# --- 9. LOGIC ---
 def apply(img_f, logo_f, s, a, p):
     im = Image.open(img_f).convert("RGBA"); wm = Image.open(logo_f).convert("RGBA")
     w_w = int((im.width * s) / 100); w_h = int(wm.height * (w_w / wm.width))
     wm = wm.resize((w_w, w_h), Image.Resampling.LANCZOS)
     r,g,b,alpha = wm.split(); wm.putalpha(alpha.point(lambda x: x * (a / 255)))
     ly = Image.new('RGBA', im.size, (0,0,0,0))
-    if p in ["Centro", "Center", "Mitte"]: 
-        ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
-    elif p in ["In basso a destra", "Bottom Right", "Unten rechts"]: 
-        ly.paste(wm, (im.width - wm.width - 20, im.height - wm.height - 20))
-    elif p in ["In basso a sinistra", "Bottom Left", "Unten links"]: 
-        ly.paste(wm, (20, im.height - wm.height - 20))
-    elif p in ["Mosaico", "Mosaic", "Mosaik"]:
+    if p in ["Center", "Centro", "Mitte"]: ly.paste(wm, ((im.width - wm.width)//2, (im.height - wm.height)//2))
+    elif any(x in p for x in ["destra", "Right", "rechts"]): ly.paste(wm, (im.width - wm.width - 20, im.height - wm.height - 20))
+    elif any(x in p for x in ["sinistra", "Left", "links"]): ly.paste(wm, (20, im.height - wm.height - 20))
+    elif any(x in p for x in ["Mosaico", "Mosaic", "Mosaik"]):
         for x in range(0, im.width, wm.width + 50):
             for y in range(0, im.height, wm.height + 50): ly.paste(wm, (x, y))
     return Image.alpha_composite(im, ly).convert("RGB")
 
-if ups  and lgo:
+if ups and lgo:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"### {t['preview']}")
     st.image(apply(ups[0], lgo, sz, op, p_sel), use_container_width=True)
 
-# --- 9. RUN ---
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 max_f = 1000 if is_pro else 5
 rem = max_f - st.session_state.usage_count
@@ -182,7 +162,7 @@ if not is_pro and rem <= 0:
 else:
     if not is_pro: st.write(f"{t['remaining']} **{rem}**")
     if st.button(t["process_btn"], type="primary", use_container_width=True):
-        if ups  and lgo:
+        if ups and lgo:
             td = ups[:rem] if not is_pro else ups
             zb = io.BytesIO()
             with zipfile.ZipFile(zb, "a", zipfile.ZIP_DEFLATED) as z:
