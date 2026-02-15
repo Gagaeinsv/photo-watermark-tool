@@ -15,7 +15,7 @@ cookie_manager = stx.CookieManager()
 # --- 3. LICENSE VERIFICATION (ANNUAL LOGIC) ---
 def verify_license(key):
     if not key: return False
-    if key == "SV-MASTER-2026": return True # Майстер-ключ
+    if key == "SV-MASTER-2026": return True 
     try:
         product_id = "xUKZUCNx_S4bzXzB__ml_w==" 
         response = requests.post(
@@ -24,27 +24,26 @@ def verify_license(key):
         )
         data = response.json()
         if response.status_code == 200 and data.get("success"):
-            # Перевірка терміну дії (365 днів)
             buy_date = datetime.strptime(data['purchase']['created_at'].split('T')[0], "%Y-%m-%d")
-            if (datetime.now() - buy_date).days > 365:
-                return "EXPIRED"
+            if (datetime.now() - buy_date).days > 365: return "EXPIRED"
             return True
-    except:
-        return False
+    except: return False
 
-# --- 4. CSS (HIDING FORK/DEPLOY & BRANDING) ---
+# --- 4. CSS (ВИПРАВЛЕНО: СТРІЛКА ТЕПЕР НЕ ПРОПАДАЄ) ---
 st.markdown("""
     <style>
-    /* ПРИХОВУЄМО КНОПКУ FORK ТА ЗАЙВІ ЕЛЕМЕНТИ STREAMLIT */
-    header {visibility: hidden; height: 0px !important;}
+    /* ПРИХОВУЄМО ТІЛЬКИ ЗАЙВІ КНОПКИ, А НЕ ВЕСЬ HEADER */
     .stAppDeployButton {display:none !important;} 
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     [data-testid="stAppToolbar"] {display: none !important;}
     
+    /* Робимо фон хедера прозорим, щоб не було білої смуги, але кнопка сайдбару залишилась */
+    [data-testid="stHeader"] {background: rgba(0,0,0,0) !important; color: white !important;}
+    
     /* ДИЗАЙН ІНТЕРФЕЙСУ */
     .block-container { padding-top: 1rem !important; }
-    .stApp, [data-testid="stHeader"], [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
+    .stApp, [data-testid="stSidebar"], .main { background-color: #0E1117 !important; color: #FFFFFF !important; }
     p, label, span, .stMarkdown, .stSlider label, .stSelectbox label { color: #00FF88 !important; font-weight: 600 !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00FF88 !important; box-shadow: 5px 0px 20px rgba(0, 255, 136, 0.2) !important; }
     
@@ -54,7 +53,6 @@ st.markdown("""
     div[data-testid="column"] > div > div > div.stVerticalBlock { background-color: #161B22 !important; border: 1px solid #00FF88 !important; border-radius: 12px; padding: 25px; }
     .stButton > button { background-color: #00FF88 !important; color: #000 !important; font-weight: 800 !important; height: 60px; border-radius: 10px; width: 100%; }
     
-    /* БАНЕР БАВОВНИ */
     .bavovna-banner { background: linear-gradient(90deg, #0057B7 0%, #FFD700 100%); color: white !important; padding: 20px; border-radius: 15px; text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 25px; border: 2px solid #00FF88; }
     </style>
 """, unsafe_allow_html=True)
@@ -97,18 +95,17 @@ translations = {
         "pos_label": "Position", "pos_options": ["Mitte", "Unten rechts", "Unten links", "Mosaik"],
         "up_header": "📂 1. Dateien hochladen", "up_photos": "Fotos auswählen", "up_logo": "Logo (PNG)",
         "setup_header": "⚙️ 2. Logo-Einstellungen", "preview": "👁️ SV Vorschau", "buy_btn": "💎 JAHRESLIZENZ KAUFEN",
-        "hint": "💡 Kennen Sie das ukrainische Zauberwort, das з 'explosiven Blumen' zu tun hat? Geben Sie es oben ein.", 
+        "hint": "💡 Kennen Sie das Zauberwort, das з 'explosiven Blumen' zu tun hat? Geben Sie es oben ein.", 
         "egg": "💙💛 Ruhm der Ukraine! 50% Rabatt.", "done": "✅ Fertig!", "expired": "❌ Lizenz abgelaufen."
     }
 }
 t = translations[st.session_state.lang]
 
-# --- 6. HEADER (LOGO + TOP-RIGHT LANG SELECTOR) ---
+# --- 6. HEADER (LOGO + TOP-RIGHT LANG) ---
 col_logo, col_lang = st.columns([8, 2])
 with col_logo:
     st.markdown(f'<div class="brand-container"><div class="sv-logo-box">SV</div><h1 style="color:white; margin:0; font-size: 38px;">{t["title"]}</h1></div>', unsafe_allow_html=True)
 with col_lang:
-    # ФІКС: Назва " " для уникнення Connection lost
     st.selectbox(" ", ["EN", "UA", "IT", "DE"], index=["EN", "UA", "IT", "DE"].index(st.session_state.lang), key="lang_picker", on_change=sync_lang, label_visibility="collapsed")
 
 # --- 7. SIDEBAR (LICENSE & EGG CHECK) ---
@@ -117,13 +114,8 @@ with st.sidebar:
     saved_key = cookie_manager.get(cookie="sv_license_key")
     user_key = st.text_input("License Key", value=saved_key if saved_key else "", type="password")
     
-    # ЛОГІКА ВЕЛИКОДКИ (БАВОВНА)
     is_egg = user_key and user_key.lower().strip() == "bavovna"
-    if is_egg:
-        st.info(t["egg"])
-        gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP"
-    else:
-        gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl"
+    gumroad_url = "https://8052063206525.gumroad.com/l/xuyjsl?offer_code=H49A3MP" if is_egg else "https://8052063206525.gumroad.com/l/xuyjsl"
     
     st.link_button(t["buy_btn"], gumroad_url, use_container_width=True)
     st.write("---")
@@ -136,10 +128,9 @@ with st.sidebar:
         if user_key != saved_key: cookie_manager.set("sv_license_key", user_key)
     else: st.warning(t["free_warn"])
     
-    # ПІДКАЗКА ПРО БАВОВНУ
     st.caption(t["hint"])
 
-# --- 8. MAIN AREA (BAVOVNA EFFECT) ---
+# --- 8. MAIN AREA (BAVOVNA BANNER) ---
 if is_egg:
     st.markdown(f'<div class="bavovna-banner">{t["egg"]}</div>', unsafe_allow_html=True)
     st.balloons()
@@ -179,8 +170,7 @@ if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 max_f = 1000 if is_pro else 5
 rem = max_f - st.session_state.usage_count
 
-if not is_pro and rem <= 0:
-    st.error("⛔ Limit reached!")
+if not is_pro and rem <= 0: st.error("⛔ Limit reached!")
 else:
     if not is_pro: st.write(f"Remaining: **{rem}**")
     if st.button(t["process_btn"], type="primary", use_container_width=True):
@@ -192,5 +182,4 @@ else:
                     res = apply(f, lgo, sz, op, p_sel); b = io.BytesIO()
                     res.save(b, format='JPEG', quality=90); zf.writestr(f"SV_{f.name}", b.getvalue())
             if not is_pro: st.session_state.usage_count += len(to_process)
-            st.success(t["done"])
-            st.download_button("📥 DOWNLOAD ZIP", zip_buffer.getvalue(), "SV_Photos.zip", "application/zip", use_container_width=True)
+            st.success(t["done"]); st.download_button("📥 DOWNLOAD ZIP", zip_buffer.getvalue(), "SV_Photos.zip", "application/zip", use_container_width=True)
